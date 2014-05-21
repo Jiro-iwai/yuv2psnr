@@ -111,13 +111,13 @@ int main(int argc, char* argv[])
   unsigned char* c0 = new unsigned char[min_read_unit];
   unsigned char* c1 = new unsigned char[min_read_unit];
 
-  double totalYMSE  = 0.0;
-  double totalCbMSE = 0.0;
-  double totalCrMSE = 0.0;
+  double totalYMSE = 0.0;
+  double totalUMSE = 0.0;
+  double totalVMSE = 0.0;
 
-  double frameYMSE  = 0.0;
-  double frameCbMSE = 0.0;
-  double frameCrMSE = 0.0;
+  double frameYMSE = 0.0;
+  double frameUMSE = 0.0;
+  double frameVMSE = 0.0;
 
   cout << "Frame       Y-PSNR[dB]  U-PSNR[dB]  V-PSNR[dB]" << endl;
 
@@ -131,51 +131,51 @@ int main(int argc, char* argv[])
     if( count < area ) { 
       MSE(c0, c1, min_read_unit, frameYMSE);
 
-    // extract Cb
+    // extract U
     } else if( area <= count && count < area/4*5 ) { // YUV420
-      MSE(c0, c1, min_read_unit, frameCbMSE);
+      MSE(c0, c1, min_read_unit, frameUMSE);
 
-    // extract Cr
+    // extract V
     } else if( area/4*5 <= count ) { // YUV420
-      MSE(c0, c1, min_read_unit, frameCrMSE);
+      MSE(c0, c1, min_read_unit, frameVMSE);
     }
 
     // end of 1 frame
     if( count == area/2*3 ) {
 
-      totalYMSE  += frameYMSE;
-      totalCbMSE += frameCbMSE;
-      totalCrMSE += frameCrMSE;
+      totalYMSE += frameYMSE;
+      totalUMSE += frameUMSE;
+      totalVMSE += frameVMSE;
 
-      frameYMSE  /= area;
-      frameCbMSE /= area/4;
-      frameCrMSE /= area/4;
+      frameYMSE /= area;
+      frameUMSE /= area/4;
+      frameVMSE /= area/4;
 
       if( opt.showFrame ) {
 
-	double y  = MSE2PSNR(frameYMSE,  MAX);
-	double cb = MSE2PSNR(frameCbMSE, MAX);
-	double cr = MSE2PSNR(frameCrMSE, MAX);
-	cout << boost::format("%-12d%-12.4f%-12.4f%-12.4f") % nframe % y % cb % cr << endl;
+	double y = MSE2PSNR(frameYMSE, MAX);
+	double u = MSE2PSNR(frameUMSE, MAX);
+	double v = MSE2PSNR(frameVMSE, MAX);
+	cout << boost::format("%-12d%-12.4f%-12.4f%-12.4f") % nframe % y % u % v << endl;
       }
 
-      frameYMSE  = 0.0;
-      frameCbMSE = 0.0;
-      frameCrMSE = 0.0;
+      frameYMSE = 0.0;
+      frameUMSE = 0.0;
+      frameVMSE = 0.0;
 
       nframe++;
       count = 0;
     }
   }
 
-  totalYMSE  /= area*nframe;
-  totalCbMSE /= area/4*nframe;
-  totalCrMSE /= area/4*nframe;
+  totalYMSE /= area*nframe;
+  totalUMSE /= area/4*nframe;
+  totalVMSE /= area/4*nframe;
 
-  double y  = MSE2PSNR(totalYMSE,  MAX);
-  double cb = MSE2PSNR(totalCbMSE, MAX);
-  double cr = MSE2PSNR(totalCrMSE, MAX);
-  cout << boost::format("Total       %-12.4f%-12.4f%-12.4f") % y % cb % cr << endl;
+  double y = MSE2PSNR(totalYMSE, MAX);
+  double u = MSE2PSNR(totalUMSE, MAX);
+  double v = MSE2PSNR(totalVMSE, MAX);
+  cout << boost::format("Total       %-12.4f%-12.4f%-12.4f") % y % u % v << endl;
 
   delete [] c0;
   delete [] c1;
