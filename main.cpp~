@@ -19,7 +19,7 @@ void MSE
   for( int i = 0; i < min_read_unit; i++ ) {
     unsigned char I = c0[i];
     unsigned char K = c1[i];
-    unsigned int diff = I - K;
+    double diff = I - K;
     MSE += diff*diff;
   }
 }
