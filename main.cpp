@@ -4,11 +4,59 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <numeric>
+#include <thread>
+#include <future>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 
 using namespace std;
 
+std::size_t const NUM_THREAD = 4;
+
+double MSE_thread
+( std::size_t const tid
+, unsigned int n
+, unsigned char* c0
+, unsigned char* c1
+)
+{
+  std::size_t len = (n + NUM_THREAD - 1) / NUM_THREAD;
+  std::size_t const beg = tid * len;
+  std::size_t const end = (tid == NUM_THREAD - 1 ? n : beg + len);
+ 
+  double MSE = 0.0;
+  for( std::size_t i = beg; i < end; ++i ){
+    unsigned char I = c0[i];
+    unsigned char K = c1[i];
+    unsigned int diff = I - K;
+    MSE += diff*diff;
+  }
+
+  return MSE;
+}
+
+double MSE
+( unsigned char* c0
+, unsigned char* c1
+, unsigned int n
+)
+{
+  std::future<double> thread[NUM_THREAD];
+
+  for( std::size_t i = 0; i < NUM_THREAD; ++i ){
+    thread[i] = std::async(std::launch::async, MSE_thread, i, n, c0, c1);
+  }
+
+  double MSE = 0.0;
+  for( std::size_t i = 0; i < NUM_THREAD; ++i ){
+    MSE += thread[i].get();
+  }
+
+  return MSE;
+}
+
+/*
 void MSE
 ( unsigned char* c0
 , unsigned char* c1
@@ -23,6 +71,7 @@ void MSE
     MSE += diff*diff;
   }
 }
+*/
 
 double MSE2PSNR
 ( double MSE
@@ -130,15 +179,15 @@ int main(int argc, char* argv[])
 
     // extract Y
     if( count <= area ) { 
-      MSE(c0, c1, min_read_unit, frameYMSE);
+      frameYMSE += MSE(c0, c1, min_read_unit);
 
     // extract U
     } else if( area < count && count <= area/4*5 ) { // YUV420
-      MSE(c0, c1, min_read_unit, frameUMSE);
+      frameUMSE += MSE(c0, c1, min_read_unit);
 
     // extract V
     } else if( area/4*5 < count ) { // YUV420
-      MSE(c0, c1, min_read_unit, frameVMSE);
+      frameVMSE += MSE(c0, c1, min_read_unit);
     }
 
     // end of 1 frame
