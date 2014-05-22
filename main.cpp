@@ -90,7 +90,8 @@ int main(int argc, char* argv[])
 
   const unsigned int area = opt.width*opt.height;
   //const unsigned int min_read_unit = 16;
-  const unsigned int min_read_unit = 8;
+  //const unsigned int min_read_unit = 8;
+  const unsigned int min_read_unit = area/4;
   const unsigned char MAX = 255;
 
   ifstream fin0( opt.file0.c_str(), ios::in | ios::binary );
@@ -128,15 +129,15 @@ int main(int argc, char* argv[])
     count += min_read_unit;
 
     // extract Y
-    if( count < area ) { 
+    if( count <= area ) { 
       MSE(c0, c1, min_read_unit, frameYMSE);
 
     // extract U
-    } else if( area <= count && count < area/4*5 ) { // YUV420
+    } else if( area < count && count <= area/4*5 ) { // YUV420
       MSE(c0, c1, min_read_unit, frameUMSE);
 
     // extract V
-    } else if( area/4*5 <= count ) { // YUV420
+    } else if( area/4*5 < count ) { // YUV420
       MSE(c0, c1, min_read_unit, frameVMSE);
     }
 
