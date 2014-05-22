@@ -153,10 +153,10 @@ int main(int argc, char* argv[])
 
       if( opt.showFrame ) {
 
-	double y = MSE2PSNR(frameYMSE, MAX);
-	double u = MSE2PSNR(frameUMSE, MAX);
-	double v = MSE2PSNR(frameVMSE, MAX);
-	cout << boost::format("%-12d%-12.4f%-12.4f%-12.4f") % nframe % y % u % v << endl;
+        double y = MSE2PSNR(frameYMSE, MAX);
+        double u = MSE2PSNR(frameUMSE, MAX);
+        double v = MSE2PSNR(frameVMSE, MAX);
+        cout << boost::format("%-12d%-12.4f%-12.4f%-12.4f") % nframe % y % u % v << endl;
       }
 
       frameYMSE = 0.0;
