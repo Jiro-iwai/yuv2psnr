@@ -9,7 +9,6 @@
 
 using namespace std;
 
-
 void MSE
 ( unsigned char* c0
 , unsigned char* c1
