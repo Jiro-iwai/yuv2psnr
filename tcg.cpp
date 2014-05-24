@@ -4,25 +4,30 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <random>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 
 using namespace std;
 
-double MSE
+void MSE
 ( unsigned char* c0
 , unsigned char* c1
 , unsigned int min_read_unit
+, double& MSE
 )
 {
-  double MSE = 0.0;
+  std::random_device rd;
+  std::mt19937 mt(rd());
+  std::uniform_int_distribution<char> uc(-10,10);
+
   for( int i = 0; i < min_read_unit; i++ ) {
     unsigned char I = c0[i];
-    unsigned char K = c1[i];
+    unsigned char K = min( max(0, I + uc(mt)), 255);
+    c1[i] = K;
     int diff = I - K;
     MSE += diff*diff;
   }
-  return MSE;
 }
 
 double MSE2PSNR
@@ -96,17 +101,17 @@ int main(int argc, char* argv[])
   const unsigned char MAX = 255;
 
   ifstream fin0( opt.file0.c_str(), ios::in | ios::binary );
-  ifstream fin1( opt.file1.c_str(), ios::in | ios::binary );
+  ofstream fin1( opt.file1.c_str(), ios::out | ios::binary );
     
   if( !fin0 ){
     cout << "Error: cannot open file `" << opt.file0 << "'" << endl;
     return 1;
   }
 
-  if( !fin1 ){
-    cout << "Error: cannot open file `" << opt.file1 << "'" << endl;
-    return 1;
-  }
+   if( !fin1 ){
+     cout << "Error: cannot open file `" << opt.file1 << "'" << endl;
+     return 1;
+   }
 
   int count = 0;    
   int nframe = 0;
@@ -126,21 +131,23 @@ int main(int argc, char* argv[])
   while( !fin0.eof() ){
 
     fin0.read( (char*)c0, min_read_unit ); 
-    fin1.read( (char*)c1, min_read_unit ); 
     count += min_read_unit;
 
     // extract Y
     if( count <= area ) { 
-      frameYMSE += MSE(c0, c1, min_read_unit);
+      MSE(c0, c1, min_read_unit, frameYMSE);
+      fin1.write( (char*)c1, min_read_unit ); 
       min_read_unit = area/4;
 
     // extract U
-    } else if( area < count && count <= area/4*5 ) {
-      frameUMSE += MSE(c0, c1, min_read_unit);
+    } else if( area < count && count <= area/4*5 ) { // YUV420
+      MSE(c0, c1, min_read_unit, frameUMSE);
+      fin1.write( (char*)c1, min_read_unit ); 
 
     // extract V
-    } else if( area/4*5 < count ) {
-      frameVMSE += MSE(c0, c1, min_read_unit);
+    } else if( area/4*5 < count ) { // YUV420
+      MSE(c0, c1, min_read_unit, frameVMSE);
+      fin1.write( (char*)c1, min_read_unit ); 
     }
 
     // end of 1 frame
