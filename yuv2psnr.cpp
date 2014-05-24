@@ -90,11 +90,9 @@ int main(int argc, char* argv[])
     opt.showFrame = false;
     parse_option(argc, argv, opt);
 
-    const unsigned int area = opt.width*opt.height;
-    //const unsigned int min_read_unit = 16;
-    //const unsigned int min_read_unit = 8;
-    unsigned int min_read_unit = area;
     const unsigned char MAX = 255;
+    const unsigned int area = opt.width*opt.height;
+    unsigned int min_read_unit = area;
 
     ifstream fin0( opt.file0.c_str(), ios::in | ios::binary );
     ifstream fin1( opt.file1.c_str(), ios::in | ios::binary );
@@ -135,11 +133,11 @@ int main(int argc, char* argv[])
             frameYMSE += MSE(c0, c1, min_read_unit);
             min_read_unit = area/4;
 
-            // extract U
+        // extract U
         } else if( area < count && count <= area/4*5 ) {
             frameUMSE += MSE(c0, c1, min_read_unit);
 
-            // extract V
+        // extract V
         } else if( area/4*5 < count ) {
             frameVMSE += MSE(c0, c1, min_read_unit);
         }
