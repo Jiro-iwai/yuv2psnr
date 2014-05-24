@@ -28,9 +28,9 @@ double MSE
 
 double MSE2PSNR
 ( double MSE
-, double MAX
 )
 {
+    const unsigned char MAX = 255;
     double PSNR = INFINITY;
 
     if( DBL_EPSILON < MSE ) {
@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
     opt.showFrame = false;
     parse_option(argc, argv, opt);
 
-    const unsigned char MAX = 255;
+
     const unsigned int area = opt.width*opt.height;
     unsigned int min_read_unit = area;
 
@@ -155,9 +155,9 @@ int main(int argc, char* argv[])
 
             if( opt.showFrame ) {
 
-                double y = MSE2PSNR(frameYMSE, MAX);
-                double u = MSE2PSNR(frameUMSE, MAX);
-                double v = MSE2PSNR(frameVMSE, MAX);
+                double y = MSE2PSNR(frameYMSE);
+                double u = MSE2PSNR(frameUMSE);
+                double v = MSE2PSNR(frameVMSE);
                 cout << boost::format("%-12d%-12.4f%-12.4f%-12.4f") % nframe % y % u % v << endl;
             }
 
@@ -175,9 +175,9 @@ int main(int argc, char* argv[])
     totalUMSE /= area/4*nframe;
     totalVMSE /= area/4*nframe;
 
-    double y = MSE2PSNR(totalYMSE, MAX);
-    double u = MSE2PSNR(totalUMSE, MAX);
-    double v = MSE2PSNR(totalVMSE, MAX);
+    double y = MSE2PSNR(totalYMSE);
+    double u = MSE2PSNR(totalUMSE);
+    double v = MSE2PSNR(totalVMSE);
     cout << boost::format("Total       %-12.4f%-12.4f%-12.4f") % y % u % v << endl;
 
     delete [] c0;
