@@ -16,9 +16,12 @@ YUV=\
 	test9.yuv \
 	test10.yuv
 
+#	g++ -o tcg -g -std=c++11 tcg.cpp
+
 test:
-	g++ -o tcg -g -std=c++11 tcg.cpp
+
 	for YU in $(YUV); do\
-		echo -n "$$YU..."; ./yuv2psnr -i0 test0.yuv -i1 $$YU -v > tmp; diff tmp $$YU.log && echo OK;\
+		echo -n "$$YU...";\
+		./yuv2psnr -i0 test0.yuv -i1 $$YU -v -t 4 > tmp; diff tmp $$YU.log && echo OK;\
 	done;
 	rm -f tmp;
