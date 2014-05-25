@@ -64,7 +64,7 @@ public:
 };
 
 Option::Option()
-: nthread(1)
+: nthread(3)
 , width(352)
 , height(288)
 , file0("")
