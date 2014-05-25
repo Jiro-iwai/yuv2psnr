@@ -265,11 +265,13 @@ void Yuv2psnr::run()
             min_read_unit = area;
         }
 
+        // sync
         while( opt.nthread <= fydeque.size() + fudeque.size() + fvdeque.size() ){
             sync_frame();
         }
     }
 
+    // flush
     while( !fvdeque.empty() ){
         sync_frame();
     }
