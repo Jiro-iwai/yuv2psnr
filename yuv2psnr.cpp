@@ -19,13 +19,15 @@ using namespace std;
 double MSE
 ( const vector<unsigned char>& c0_vec
 , const vector<unsigned char>& c1_vec
-, unsigned int read_unit
 )
 {
     double MSE = 0.0;
-    for( int i = 0; i < read_unit; i++ ) {
-        unsigned char I = c0_vec[i];
-        unsigned char K = c1_vec[i];
+    auto i0 = c0_vec.begin();
+    auto i1 = c1_vec.begin();
+    auto end = c0_vec.end();
+    while( i0 != end ) {
+        unsigned char I = *i0++;
+        unsigned char K = *i1++;
         int diff = I - K;
         MSE += diff*diff;
     }
@@ -227,30 +229,27 @@ void Yuv2psnr::run()
     while( !fin0.eof() ) {
 
         Fvalue vf(read_unit);
-        char* c0 = (char*)&(vf.c0vec.at(0));
-        char* c1 = (char*)&(vf.c1vec.at(0));
+        auto c0 = (char*)&(vf.c0vec.at(0));
+        auto c1 = (char*)&(vf.c1vec.at(0));
         fin0.read(c0, read_unit); 
         fin1.read(c1, read_unit); 
 
         count += read_unit;
 
+        auto f = async(launch::async, MSE, vf.c0vec, vf.c1vec);
+        vf.f = move(f);
+
         // extract Y
         if( count <= area ) { 
-            auto fy  = async(launch::async, MSE, vf.c0vec, vf.c1vec, read_unit);
-            vf.f = move(fy);
             fydeque.push_back(move(vf));
             read_unit = area/4;
 
         // extract U
         } else if( area < count && count <= area/4*5 ) {
-            auto fu  = async(launch::async, MSE, vf.c0vec, vf.c1vec, read_unit);
-            vf.f = move(fu);
             fudeque.push_back(move(vf));
 
         // extract V
         } else if( area/4*5 < count ) {
-            auto fv  = async(launch::async, MSE, vf.c0vec, vf.c1vec, read_unit);
-            vf.f = move(fv);
             fvdeque.push_back(move(vf));
         }
 
@@ -275,9 +274,9 @@ void Yuv2psnr::run()
     totalUMSE /= area/4*nframe;
     totalVMSE /= area/4*nframe;
 
-    double y = MSE2PSNR(totalYMSE);
-    double u = MSE2PSNR(totalUMSE);
-    double v = MSE2PSNR(totalVMSE);
+    auto y = MSE2PSNR(totalYMSE);
+    auto u = MSE2PSNR(totalUMSE);
+    auto v = MSE2PSNR(totalVMSE);
     cout << boost::format("Total       %-12.4f%-12.4f%-12.4f") % y % u % v << endl;
 }
 
