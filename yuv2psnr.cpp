@@ -130,14 +130,11 @@ private:
     ifstream fin1;
     unsigned int area;
     unsigned int min_read_unit;
-    int count = 0;
-    int nframe = 0;
-    double totalYMSE = 0.0;
-    double totalUMSE = 0.0;
-    double totalVMSE = 0.0;
-    double frameYMSE = 0.0;
-    double frameUMSE = 0.0;
-    double frameVMSE = 0.0;
+    int count;
+    int nframe;
+    double totalYMSE;
+    double totalUMSE;
+    double totalVMSE;
     deque<Fvalue> fydeque;
     deque<Fvalue> fudeque;
     deque<Fvalue> fvdeque;
@@ -149,9 +146,6 @@ Yuv2psnr::Yuv2psnr(int argc, char* argv[])
 , totalYMSE(0.0)
 , totalUMSE(0.0)
 , totalVMSE(0.0)
-, frameYMSE(0.0)
-, frameUMSE(0.0)
-, frameVMSE(0.0)
 {
     //Option opt;
     opt.nthread = 1;
@@ -197,13 +191,13 @@ void Yuv2psnr::check()
 
 void Yuv2psnr::sync_frame()
 {
-    frameYMSE = fydeque.front().f.get();
+    double frameYMSE = fydeque.front().f.get();
     fydeque.pop_front();
 
-    frameUMSE = fudeque.front().f.get();
+    double frameUMSE = fudeque.front().f.get();
     fudeque.pop_front();
 
-    frameVMSE = fvdeque.front().f.get();
+    double frameVMSE = fvdeque.front().f.get();
     fvdeque.pop_front();
 
     totalYMSE += frameYMSE;
@@ -222,9 +216,6 @@ void Yuv2psnr::sync_frame()
         cout << boost::format("%-12d%-12.4f%-12.4f%-12.4f") % nframe % y % u % v << endl;
     }
 
-    frameYMSE = 0.0;
-    frameUMSE = 0.0;
-    frameVMSE = 0.0;
     nframe++;
 }
 
