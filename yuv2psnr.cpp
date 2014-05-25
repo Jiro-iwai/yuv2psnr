@@ -19,11 +19,11 @@ using namespace std;
 double MSE
 ( const vector<unsigned char>& c0_vec
 , const vector<unsigned char>& c1_vec
-, unsigned int min_read_unit
+, unsigned int read_unit
 )
 {
     double MSE = 0.0;
-    for( int i = 0; i < min_read_unit; i++ ) {
+    for( int i = 0; i < read_unit; i++ ) {
         unsigned char I = c0_vec[i];
         unsigned char K = c1_vec[i];
         int diff = I - K;
@@ -46,7 +46,13 @@ double MSE2PSNR
     return PSNR;
 }
 
-struct Option {
+class Option {
+
+public:
+    Option();
+    void parse(int argc, char* argv[]);
+
+public:
     int nthread;
     int width;
     int height;
@@ -55,11 +61,17 @@ struct Option {
     bool showFrame;
 };
 
-void parse_option
-( int argc
-, char* argv[]
-, Option& opt
-)
+Option::Option()
+: nthread(1)
+, width(352)
+, height(288)
+, file0("")
+, file1("")
+, showFrame(false)
+{
+}
+
+void Option::parse(int argc, char* argv[])
 {
     for( int i = 1; i < argc; i++ ) {
 
@@ -67,21 +79,21 @@ void parse_option
     
         if( op == "-w" ) {
             i++;
-            opt.width = boost::lexical_cast<int>(argv[i]);
+            width = boost::lexical_cast<int>(argv[i]);
         } else if( op == "-h" ) {
             i++;
-            opt.height = boost::lexical_cast<int>(argv[i]);
+            height = boost::lexical_cast<int>(argv[i]);
         } else if( op == "-i0" ) {
             i++;
-            opt.file0 = argv[i];
+            file0 = argv[i];
         } else if( op == "-i1" ) {
             i++;
-            opt.file1 = argv[i];
+            file1 = argv[i];
         } else if( op == "-t" ) {
             i++;
-            opt.nthread = 3*boost::lexical_cast<int>(argv[i]);
+            nthread = 3*boost::lexical_cast<int>(argv[i]);
         } else if( op == "-v" ) {
-            opt.showFrame = true;
+            showFrame = true;
         }
     }
 }
@@ -90,7 +102,10 @@ class Fvalue
 {
 public:
 
-    Fvalue(){}
+    Fvalue(size_t n) {
+        c0vec.resize(n);
+        c1vec.resize(n);
+    }
 
     Fvalue( Fvalue&& org ) {
         f = move(org.f);
@@ -106,8 +121,8 @@ public:
     }
 
     future<double> f;
-    shared_ptr<vector<unsigned char>> c0vec;
-    shared_ptr<vector<unsigned char>> c1vec;
+    vector<unsigned char> c0vec;
+    vector<unsigned char> c1vec;
 };
 
 class Yuv2psnr {
@@ -129,7 +144,7 @@ private:
     ifstream fin0;
     ifstream fin1;
     unsigned int area;
-    unsigned int min_read_unit;
+    unsigned int read_unit;
     int count;
     int nframe;
     double totalYMSE;
@@ -147,23 +162,9 @@ Yuv2psnr::Yuv2psnr(int argc, char* argv[])
 , totalUMSE(0.0)
 , totalVMSE(0.0)
 {
-    //Option opt;
-    opt.nthread = 1;
-    // CIF
-    opt.width = 352;
-    opt.height = 288;
-    // HD
-    //int width  = 1920;
-    //int height = 1080;
-    opt.file0 = "";
-    opt.file1 = "";
-    opt.showFrame = false;
-
-    parse_option(argc, argv, opt);
-
+    opt.parse(argc, argv);
     area = opt.width*opt.height;
-    min_read_unit = area;
-
+    read_unit = area;
     fin0.open( opt.file0.c_str(), ios::in | ios::binary );
     fin1.open( opt.file1.c_str(), ios::in | ios::binary );
 }
@@ -225,36 +226,30 @@ void Yuv2psnr::run()
 
     while( !fin0.eof() ) {
 
-        Fvalue vf;
+        Fvalue vf(read_unit);
+        char* c0 = (char*)&(vf.c0vec.at(0));
+        char* c1 = (char*)&(vf.c1vec.at(0));
+        fin0.read(c0, read_unit); 
+        fin1.read(c1, read_unit); 
 
-        shared_ptr<vector<unsigned char>> c0_vec_ptr(new vector<unsigned char>(min_read_unit));
-        shared_ptr<vector<unsigned char>> c1_vec_ptr(new vector<unsigned char>(min_read_unit));
-        vf.c0vec = c0_vec_ptr;
-        vf.c1vec = c1_vec_ptr;
-
-        char* c0 = (char*)&(c0_vec_ptr->at(0));
-        char* c1 = (char*)&(c1_vec_ptr->at(0));
-        fin0.read( c0, min_read_unit ); 
-        fin1.read( c1, min_read_unit ); 
-
-        count += min_read_unit;
+        count += read_unit;
 
         // extract Y
         if( count <= area ) { 
-            auto fy  = async(launch::async, MSE, *c0_vec_ptr.get(), *c1_vec_ptr.get(), min_read_unit);
+            auto fy  = async(launch::async, MSE, vf.c0vec, vf.c1vec, read_unit);
             vf.f = move(fy);
             fydeque.push_back(move(vf));
-            min_read_unit = area/4;
+            read_unit = area/4;
 
         // extract U
         } else if( area < count && count <= area/4*5 ) {
-            auto fu  = async(launch::async, MSE, *c0_vec_ptr.get(), *c1_vec_ptr.get(), min_read_unit);
+            auto fu  = async(launch::async, MSE, vf.c0vec, vf.c1vec, read_unit);
             vf.f = move(fu);
             fudeque.push_back(move(vf));
 
         // extract V
         } else if( area/4*5 < count ) {
-            auto fv  = async(launch::async, MSE, *c0_vec_ptr.get(), *c1_vec_ptr.get(), min_read_unit);
+            auto fv  = async(launch::async, MSE, vf.c0vec, vf.c1vec, read_unit);
             vf.f = move(fv);
             fvdeque.push_back(move(vf));
         }
@@ -262,11 +257,11 @@ void Yuv2psnr::run()
         // end of 1 frame
         if( count == area/2*3 ) {
             count = 0;
-            min_read_unit = area;
+            read_unit = area;
         }
 
         // sync
-        while( opt.nthread <= fydeque.size() + fudeque.size() + fvdeque.size() ){
+        while( opt.nthread < fydeque.size() + fudeque.size() + fvdeque.size() ){
             sync_frame();
         }
     }
