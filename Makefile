@@ -1,7 +1,8 @@
 
 all:
-#	g++ -o yuv2psnr -O3 main.cpp
-	g++ -o yuv2psnr -g -std=c++11 yuv2psnr.cpp
+	g++ -o yuv2psnr -O3 -std=c++11 yuv2psnr.cpp
+	g++ -o yuv2psnr_s -O3 -std=c++11 yuv2psnr_single.cpp
+#	g++ -o yuv2psnr -g -std=c++11 yuv2psnr.cpp
 
 
 YUV=\
@@ -22,6 +23,6 @@ test:
 
 	for YU in $(YUV); do\
 		echo -n "$$YU...";\
-		./yuv2psnr -i0 test0.yuv -i1 $$YU -v -t 4 > tmp; diff tmp $$YU.log && echo OK;\
+		./yuv2psnr -i0 test0.yuv -i1 $$YU -v -t 4 > tmp; diff --strip-trailing-cr tmp $$YU.log && echo OK;\
 	done;
 	rm -f tmp;
